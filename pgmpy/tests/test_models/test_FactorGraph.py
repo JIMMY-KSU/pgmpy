@@ -1,3 +1,6 @@
+import unittest
+import numpy as np
+
 from pgmpy.factors import Factor
 from pgmpy.models import FactorGraph
 from pgmpy.models import MarkovModel
@@ -6,6 +9,7 @@ from pgmpy.tests import help_functions as hf
 import numpy as np
 import unittest
 from pgmpy.exceptions import CardinalityError
+from pgmpy.extern.six.moves import range
 
 class TestFactorGraphCreation(unittest.TestCase):
     def setUp(self):
