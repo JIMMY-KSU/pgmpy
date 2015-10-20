@@ -11,6 +11,7 @@ import pandas as pd
 from pgmpy.base import DirectedGraph
 from pgmpy.factors import TabularCPD
 from pgmpy.independencies import Independencies
+from pgmpy.extern.six.moves import range
 
 
 class BayesianModel(DirectedGraph):
@@ -80,7 +81,7 @@ class BayesianModel(DirectedGraph):
     3
     """
     def __init__(self, ebunch=None):
-        super().__init__()
+        super(BayesianModel, self).__init__()
         if ebunch:
             self.add_edges_from(ebunch)
         self.cpds = []
@@ -238,7 +239,7 @@ class BayesianModel(DirectedGraph):
                 if set(evidence if evidence else []) != set(parents if parents else []):
                     raise ValueError("CPD associated with %s doesn't have "
                                      "proper parents associated with it." % node)
-                if not np.allclose(cpd.marginalize([node], inplace=False).values,
+                if not np.allclose(cpd.to_factor().marginalize([node], inplace=False).values.flatten('C'),
                                    np.ones(np.product(cpd.evidence_card)),
                                    atol=0.01):
                     raise ValueError('Sum of probabilites of states for node %s'

@@ -5,10 +5,11 @@ import networkx as nx
 import numpy as np
 from pandas import DataFrame
 
-from pgmpy.factors.Factor import Factor, factor_product
+from pgmpy.factors.Factor import factor_product
 from pgmpy.inference import Inference
 from pgmpy.models import BayesianModel, MarkovChain, MarkovModel
 from pgmpy.utils.mathext import sample_discrete
+from pgmpy.extern.six.moves import map, range
 
 
 State = namedtuple('State', ['var', 'state'])
@@ -31,7 +32,7 @@ class BayesianModelSampling(Inference):
     def __init__(self, model):
         if not isinstance(model, BayesianModel):
             raise TypeError("model must an instance of BayesianModel")
-        super().__init__(model)
+        super(BayesianModelSampling, self).__init__(model)
         self.topological_order = nx.topological_sort(model)
         self.cpds = {node: model.get_cpds(node) for node in model.nodes()}
 
@@ -70,7 +71,7 @@ class BayesianModelSampling(Inference):
         sampled = DataFrame(index=range(size), columns=self.topological_order)
         for node in self.topological_order:
             cpd = self.cpds[node]
-            states = [state for state in range(cpd.get_cardinality(node)[node])]
+            states = [state for state in range(cpd.get_cardinality([node])[node])]
             if cpd.evidence:
                 indices = [i for i, x in enumerate(self.topological_order) if x in cpd.evidence]
                 evidence = sampled.values[:, [indices]].tolist()
@@ -176,7 +177,7 @@ class BayesianModelSampling(Inference):
         evidence_dict = {var: st for var, st in evidence}
         for node in self.topological_order:
             cpd = self.cpds[node]
-            states = [state for state in range(cpd.get_cardinality(node)[node])]
+            states = [state for state in range(cpd.get_cardinality([node])[node])]
             if cpd.evidence:
                 indices = [i for i, x in enumerate(self.topological_order) if x in cpd.evidence]
                 evidence = sampled.values[:, [indices]].tolist()
@@ -236,7 +237,7 @@ class GibbsSampling(MarkovChain):
     2      1    1
     """
     def __init__(self, model=None):
-        super().__init__()
+        super(GibbsSampling, self).__init__()
         if isinstance(model, BayesianModel):
             self._get_kernel_from_bayesian_model(model)
         elif isinstance(model, MarkovModel):
@@ -289,7 +290,7 @@ class GibbsSampling(MarkovChain):
         # Take factor product
         factors_dict = {var: factor_product(*factors) if len(factors) > 1 else factors[0]
                         for var, factors in factors_dict.items()}
-        self.cardinalities = {var: factors_dict[var].get_cardinality(var)[var] for var in self.variables}
+        self.cardinalities = {var: factors_dict[var].get_cardinality([var])[var] for var in self.variables}
 
         for var in self.variables:
             other_vars = [v for v in self.variables if var != v]

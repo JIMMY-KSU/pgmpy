@@ -1,4 +1,5 @@
-import functools
+from __future__ import division
+
 from itertools import product
 from collections import namedtuple
 
@@ -8,12 +9,13 @@ from numbers import Number
 import numpy as np
 
 from pgmpy.extern import tabulate
+from pgmpy.extern.six.moves import map, range, reduce, zip
 
 
 State = namedtuple('State', ['var', 'state'])
 
 
-class Factor:
+class Factor(object):
     """
     Base class for Factor.
 
@@ -76,7 +78,11 @@ class Factor:
         >>> phi
         <Factor representing phi(x1:2, x2:2, x3:2) at 0x7f8188fcaa90>
         """
+
         values = np.array(values)
+        
+        if values.dtype != int and values.dtype != float:
+            raise TypeError("Values: Expected type int or type float, got ", values.dtype)
 
         if len(cardinality) != len(variables):
             raise ValueError("Number of elements in cardinality must be equal to number of variables")
@@ -99,7 +105,7 @@ class Factor:
         Examples
         --------
         >>> from pgmpy.factors import Factor
-        >>> phi = Factor(['x1', 'x2', 'x3'], [2, 3, 2], np.ones(8))
+        >>> phi = Factor(['x1', 'x2', 'x3'], [2, 3, 2], np.ones(12))
         >>> phi.scope()
         ['x1', 'x2', 'x3']
         """
@@ -127,6 +133,9 @@ class Factor:
         >>> phi.get_cardinality(['x1', 'x2'])
         {'x1': 2, 'x2': 3}
         """
+        if isinstance(variables, str):
+            raise TypeError("variables: Expected type list or array-like, got type str")
+
         if not all([var in self.variables for var in variables]):
             raise ValueError("Variable not in scope")
 
@@ -151,7 +160,7 @@ class Factor:
         >>> from pgmpy.factors import Factor
         >>> phi = Factor(['diff', 'intel'], [2, 2], np.ones(4))
         >>> phi.assignment([1, 2])
-        [['diff_0', 'intel_1'], ['diff_1', 'intel_0']]
+        [[('diff', 0), ('intel', 1)], [('diff', 1), ('intel', 0)]]
         """
         index = np.array(index)
 
@@ -227,6 +236,10 @@ class Factor:
         >>> phi.variables
         ['x2']
         """
+
+        if isinstance(variables, str):
+            raise TypeError("variables: Expected type list or array-like, got type str")
+
         phi = self if inplace else self.copy()
 
         for var in variables:
@@ -277,6 +290,9 @@ class Factor:
                [ 0.05,  0.07],
                [ 0.15,  0.21]]
         """
+        if isinstance(variables, str):
+            raise TypeError("variables: Expected type list or array-like, got type str")
+
         phi = self if inplace else self.copy()
 
         for var in variables:
@@ -365,6 +381,13 @@ class Factor:
         >>> phi.values
         array([0., 1.])
         """
+        if isinstance(values, str):
+            raise TypeError("values: Expected type list or array-like, got type str")
+
+        if (any(isinstance(value, str) for value in values) or
+                not all(isinstance(state, (int, np.integer)) for var, state in values)):
+            raise TypeError("values: must contain tuples or array-like elements of the form (hashable object, type int)")
+
         phi = self if inplace else self.copy()
 
         var_index_to_del = []
@@ -692,6 +715,8 @@ class Factor:
     def __truediv__(self, other):
         return self.divide(other, inplace=False)
 
+    __div__ = __truediv__
+
     def __eq__(self, other):
         if not (isinstance(self, Factor) and isinstance(other, Factor)):
             return False
@@ -718,11 +743,8 @@ class Factor:
                 return True
 
     def __hash__(self):
-        """
-        Returns the hash of the factor object based on the scope of the factor.
-        """
-        return hash(' '.join(map(str, self.variables)) + ' '.join(map(str, self.cardinality)) +
-                    ' '.join(list(map(str, self.values.astype('float')))))
+        return hash(str(self.variables) + str(self.cardinality.tolist()) +
+                    str(self.values.astype('float').tolist()))
 
 
 def factor_product(*args):
@@ -770,7 +792,7 @@ def factor_product(*args):
     """
     if not all(isinstance(phi, Factor) for phi in args):
         raise TypeError("Arguments must be factors")
-    return functools.reduce(lambda phi1, phi2: phi1 * phi2, args)
+    return reduce(lambda phi1, phi2: phi1 * phi2, args)
 
 
 def factor_divide(phi1, phi2):
