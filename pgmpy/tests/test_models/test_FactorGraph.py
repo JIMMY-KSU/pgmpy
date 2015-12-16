@@ -11,7 +11,6 @@ import unittest
 from pgmpy.extern import six
 from pgmpy.extern.six.moves import range
 
-
 class TestFactorGraphCreation(unittest.TestCase):
     def setUp(self):
         self.graph = FactorGraph()
