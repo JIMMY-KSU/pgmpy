@@ -177,9 +177,9 @@ class StateNameDecorator():
                 # If input parameters are in args format
                 else:
                     for arg_val in args[1:]:
+                        mapped_args = list(args)
                         mapped_arg_val = self.get_mapped_value(arg_val)
                         if mapped_arg_val:
-                            mapped_args = list(args)
                             mapped_args[args.index(arg_val)] = mapped_arg_val
                     return f(*mapped_args, **kwargs)
 
